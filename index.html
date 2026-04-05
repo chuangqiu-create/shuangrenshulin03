@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>最强大脑第13季：双人数邻 - 完美匹配专业版</title>
+    <style>
+        :root {
+            /* 严格低蓝光调色板 */
+            --bg: #0d0c0b;         /* 极深墨棕 */
+            --panel: #1a1816;      /* 深咖啡色 */
+            --cyan: #cc8e35;       /* 琥珀金 (替代原青色) */
+            --gold: #b37a30;       /* 暗金 */
+            --pawn-a: #9e3a3a;     /* 砖红色 */
+            --pawn-b: #5d7a4a;     /* 橄榄绿 */
+            --unit: 70px;
+            --text: #c5b9ac;       /* 柔和奶油色 */
+            --border: #332d28;     /* 边框色 */
+        }
+        
+        body { 
+            margin: 0; 
+            background: var(--bg); 
+            color: var(--text); 
+            display: flex; 
+            height: 100vh; 
+            font-family: "PingFang SC", "Microsoft YaHei", sans-serif; 
+            overflow: hidden; 
+        }
+
+        /* 侧边栏优化：低对比度，减少干扰 */
+        .col-left { 
+            width: 320px; padding: 25px; 
+            background: var(--panel); 
+            border-right: 1px solid var(--border); 
+            overflow-y: auto; box-sizing: border-box;
+        }
+        
+        .col-main { 
+            flex: 1; display: flex; flex-direction: column; 
+            align-items: center; justify-content: center; position: relative; 
+            background: radial-gradient(circle, #1e1b18 0%, #0d0c0b 100%);
+        }
+        
+        .col-right { 
+            width: 340px; padding: 25px; 
+            background: var(--panel); 
+            border-left: 1px solid var(--border); 
+            overflow-y: auto; box-sizing: border-box;
+        }
+
+        h2, h3 { 
+            color: var(--gold); 
+            border-bottom: 1px solid var(--border); 
+            padding-bottom: 10px; margin-top: 0; font-weight: 300; 
+        }
+
+        .script-box { 
+            background: rgba(0,0,0,0.3); padding: 15px; border-radius: 4px; 
+            font-size: 13px; line-height: 1.8; color: #8e8275; 
+            border-left: 3px solid var(--gold); margin-bottom: 20px;
+        }
+
+        .rule-card { 
+            background: rgba(255,255,255,0.02); padding: 12px; border-radius: 4px; 
+            font-size: 13px; line-height: 1.6; color: #8e8275; 
+        }
+
+        /* 棋盘：沉浸式深色设计 */
+        #board-frame { 
+            position: relative; padding: 10px; 
+            background: #000; border: 1px solid #332d28; 
+            box-shadow: 0 0 40px rgba(0,0,0,0.8); 
+            border-radius: 4px;
+        }
+        
+        #grid { 
+            display: grid; 
+            grid-template-columns: repeat(8, var(--unit)); 
+            grid-template-rows: repeat(7, var(--unit)); 
+            background: #111; 
+        }
+        
+        .cell {
+            width: var(--unit); height: var(--unit); border: 0.1px solid #1a1a1a; 
+            box-sizing: border-box; display: flex; flex-direction: column; 
+            justify-content: center; align-items: center;
+            font-size: 26px; font-weight: 400; color: #443e38; 
+            position: relative; cursor: pointer; transition: all 0.2s;
+        }
+
+        /* 墙壁：琥珀金属质感 */
+        .wt { border-top: 5px solid var(--cyan) !important; }
+        .wb { border-bottom: 5px solid var(--cyan) !important; }
+        .wl { border-left: 5px solid var(--cyan) !important; }
+        .wr { border-right: 5px solid var(--cyan) !important; }
+
+        .cell-locked { background: #080706 !important; color: #1a1816 !important; }
+
+        /* 棋子：圆润且带有柔和光晕 */
+        .pawn {
+            width: 54px; height: 54px; border-radius: 50%; position: absolute;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 22px; font-weight: bold; z-index: 100; pointer-events: none;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); 
+            border: 2px solid rgba(255,255,255,0.1); color: #fff;
+        }
+        #pawn-a { background: var(--pawn-a); box-shadow: 0 0 20px rgba(158, 58, 58, 0.3); }
+        #pawn-b { background: var(--pawn-b); box-shadow: 0 0 20px rgba(93, 122, 74, 0.3); }
+
+        /* 活跃状态：琥珀色外环提示 */
+        .active-ring { 
+            outline: 3px solid var(--gold); 
+            outline-offset: 4px; 
+            animation: breathe 1.5s infinite ease-in-out; 
+        }
+        @keyframes breathe { from { opacity: 0.7; } to { opacity: 1; } }
+
+        .gold-rect {
+            position: absolute; border: 2px solid var(--gold);
+            background: rgba(179, 122, 48, 0.1); border-radius: 4px;
+            z-index: 50; pointer-events: none;
+        }
+
+        .stat-big { 
+            font-size: 44px; font-family: "Courier New", monospace; 
+            color: var(--cyan); line-height: 1; 
+        }
+        
+        .ctrl-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 15px 0; }
+        
+        button { 
+            padding: 12px; border-radius: 4px; border: 1px solid #3d352e; 
+            background: #25211d; color: var(--text); font-weight: bold; 
+            cursor: pointer; transition: all 0.2s;
+        }
+        button:hover:not(:disabled) { background: var(--gold); color: #000; border-color: var(--gold); }
+        
+        .pair-btn-main { 
+            grid-column: span 3; background: var(--gold); color: #000; 
+            font-size: 20px; height: 55px; margin-top: 10px; border: none;
+        }
+        
+        textarea { 
+            width: 100%; height: 90px; background: #0a0a0a; color: var(--gold); 
+            font-family: monospace; font-size: 11px; border: 1px solid #2d2824; 
+            margin-top: 10px; resize: none; padding: 5px; box-sizing: border-box;
+        }
+
+        /* 隐藏的修改模式UI */
+        .edit-id { position: absolute; font-size: 9px; color: #554a40; display: none; z-index: 20; background: rgba(0,0,0,0.8); padding: 1px; }
+        .c-id { top: 2px; left: 2px; }
+        .h-id { top: -10px; left: 35%; color: var(--cyan); border: 1px solid #443e38; }
+        .v-id { left: -14px; top: 35%; color: var(--cyan); border: 1px solid #443e38; }
+        .edit-mode .edit-id { display: block; }
+        .edit-mode .cell { color: #8e8275; }
+    </style>
+</head>
+<body>
+
+<div class="col-left">
+    <h2>比赛规则</h2>
+    <div class="script-box">
+        <b>【项目解说台词】</b><br>
+        “两名选手在迷宫内任选起点，交替操作棋子移动。当棋子处于相邻位置时，即可完成对应数字的配对。注意：每个坐标格仅限使用一次！当盘面上56个格子全部完成匹配，挑战即告成功。这是一场极致的路径规划与全局博弈！”
+    </div>
+    <div class="rule-card">
+        <p>1. <b>交替移动</b>：A 和 B 必须轮流行动。</p>
+        <p>2. <b>格点唯一</b>：每个格子配对后即锁定变黑，不能重复参与配对。</p>
+        <p>3. <b>操作提示</b>：WASD控A，方向键控B，空格配对。</p>
+        <p>4. <b>修改模式</b>：可自定义墙壁与数字，支持另存为对话框。</p>
+    </div>
+</div>
+
+<div class="col-main">
+    <div id="board-frame">
+        <div id="grid"></div>
+        <div id="pawn-a" class="pawn" style="display:none">A</div>
+        <div id="pawn-b" class="pawn" style="display:none">B</div>
+        <div id="rect-layer"></div>
+    </div>
+    <div id="status-msg" style="color:var(--gold); font-weight:bold; margin-top:20px; letter-spacing:1px;">点击盘面放置 A</div>
+</div>
+
+<div class="col-right">
+    <div style="background: rgba(0,0,0,0.2); padding: 20px; border-radius: 8px; text-align: center; border: 1px solid var(--border);">
+        <div id="timer" class="stat-big">00:00</div>
+        <div id="steps-ui" style="color:#5c544d; margin: 5px 0;">STEPS: 0</div>
+        <div id="pairs-ui" style="color:var(--gold); font-weight:bold;">PAIRS: 0 / 28</div>
+    </div>
+
+    <div id="turn-ui" style="text-align:center; padding:10px; font-weight:bold; margin-top:15px; border-radius:4px; color: #fff;">等待部署</div>
+
+    <div class="ctrl-grid">
+        <div></div><button onclick="movePawn('up')">↑</button><div></div>
+        <button onclick="movePawn('left')">←</button><button onclick="movePawn('down')">↓</button><button onclick="movePawn('right')">→</button>
+        <button class="pair-btn-main" onclick="handleMatch()">手动配对 (Space)</button>
+    </div>
+
+    <div style="display:flex; flex-direction:column; gap:8px;">
+        <button onclick="resetOnlyPosition()" style="color:var(--gold); border-color:var(--gold); background:transparent;">重置位置 (保留时间)</button>
+        <button id="edit-btn" onclick="toggleEdit()">进入修改模式</button>
+        
+        <div id="edit-ops" style="display:none; flex-direction:column; gap:8px;">
+            <button onclick="exportToTextarea()" style="background:#111;">导出代码至下方文本框</button>
+            <button onclick="saveWithSystemPicker()" style="background:#2d2824;">将代码保存为 TXT (选择路径)</button>
+            <button onclick="document.getElementById('fIn').click()">从本地导入 TXT 布局</button>
+            <input type="file" id="fIn" style="display:none" onchange="importFromFile(this)">
+        </div>
+        
+        <button onclick="loadOriginal()" style="color:var(--cyan); border-color:var(--cyan); background:transparent;">导入国际赛原题 & 重置时间</button>
+    </div>
+    
+    <textarea id="io-area" readonly placeholder="数据预览区..."></textarea>
+</div>
+
+<script>
+    /* 脚本逻辑完全保留原始版本 */
+    const ROWS = 7, COLS = 8;
+    let editMode = false;
+    
+    const ORIG_NUM = [[2,3,5,6,3,7,3,2],[6,2,6,1,4,6,3,1],[6,3,3,3,3,5,7,5],[7,2,6,7,4,5,2,5],[7,5,4,4,4,6,2,2],[6,5,7,2,4,4,7,1],[1,1,1,7,5,4,1,1]];
+    const ORIG_WALL = {"h":[[0,0,0,0,0,0,0,0],[1,1,0,1,1,1,0,0],[0,0,0,1,1,0,0,1],[0,1,1,1,0,0,0,0],[1,0,0,0,1,1,1,0],[1,0,0,1,0,1,1,0],[0,1,1,0,0,0,1,0],[0,0,0,0,0,0,0,0]],"v":[[0,0,0,0,0,1,0,1,0],[0,1,1,0,0,0,1,0,0],[0,0,0,1,0,1,1,0,0],[0,0,1,1,1,0,0,1,0],[0,0,0,0,0,1,0,0,0],[0,0,1,1,0,0,0,1,0],[0,1,0,0,1,1,0,1,0]]};
+
+    let numbers = JSON.parse(JSON.stringify(ORIG_NUM));
+    let hw = JSON.parse(JSON.stringify(ORIG_WALL.h));
+    let vw = JSON.parse(JSON.stringify(ORIG_WALL.v));
+
+    let state='SET_A', posA=null, posB=null, turn='A', steps=0, seconds=0, timerId=null;
+    let locked = new Set(), combos = new Set();
+
+    function initBoard() {
+        const grid = document.getElementById('grid');
+        grid.innerHTML = '';
+        for(let r=0; r<ROWS; r++){
+            for(let c=0; c<COLS; c++){
+                const cell = document.createElement('div');
+                cell.className = 'cell'; cell.id = `cell-${r}-${c}`;
+                cell.innerHTML = `<div class="edit-id c-id">C${r+1},${c+1}</div><span>${numbers[r][c]}</span>`;
+                
+                const vBtn = document.createElement('div');
+                vBtn.className = 'edit-id v-id'; vBtn.innerText = `V${r+1}-${c}`;
+                vBtn.onclick = (e) => { e.stopPropagation(); vw[r][c]=1-vw[r][c]; initBoard(); };
+                cell.appendChild(vBtn);
+                
+                const hBtn = document.createElement('div');
+                hBtn.className = 'edit-id h-id'; hBtn.innerText = `H${r}-${c+1}`;
+                hBtn.onclick = (e) => { e.stopPropagation(); hw[r][c]=1-hw[r][c]; initBoard(); };
+                cell.appendChild(hBtn);
+
+                cell.onclick = () => onCellClick(r, c);
+                grid.appendChild(cell);
+            }
+        }
+        syncWalls();
+    }
+
+    function syncWalls() {
+        for(let r=0; r<ROWS; r++){
+            for(let c=0; c<COLS; c++){
+                const el = document.getElementById(`cell-${r}-${c}`);
+                el.classList.toggle('wt', hw[r][c]);
+                el.classList.toggle('wb', hw[r+1] && hw[r+1][c]);
+                el.classList.toggle('wl', vw[r][c]);
+                el.classList.toggle('wr', vw[r][c+1]);
+                el.classList.toggle('cell-locked', locked.has(`${r},${c}`));
+            }
+        }
+    }
+
+    function toggleEdit() {
+        editMode = !editMode;
+        document.body.classList.toggle('edit-mode', editMode);
+        document.getElementById('edit-btn').innerText = editMode ? "退出并保存布局" : "进入修改模式";
+        document.getElementById('edit-ops').style.display = editMode ? "flex" : "none";
+        if(!editMode) resetOnlyPosition();
+    }
+
+    function onCellClick(r, c) {
+        if(editMode) {
+            let val = prompt(`修改格子 C${r+1},${c+1} 的数字 (0-9):`, numbers[r][c]);
+            if(val !== null && !isNaN(val)) { numbers[r][c] = parseInt(val % 10); initBoard(); }
+            return;
+        }
+        if (state === 'SET_A') {
+            posA = {r, c}; updatePawn('a', r, c); state = 'SET_B';
+            msg("A已就绪，请放置 B");
+        } else if (state === 'SET_B') {
+            if (r===posA.r && c===posA.c) return;
+            posB = {r, c}; updatePawn('b', r, c); state = 'RUN';
+            startTimer(); updateUI();
+        }
+    }
+
+    function movePawn(dir) {
+        if(state !== 'RUN') return;
+        let cur = (turn === 'A' ? posA : posB);
+        let next = {...cur};
+        if(dir==='up') next.r--; if(dir==='down') next.r++; if(dir==='left') next.c--; if(dir==='right') next.c++;
+        if (next.r<0||next.r>=ROWS||next.c<0||next.c>=COLS) return;
+        if(dir==='up' && hw[cur.r][cur.c]) return;
+        if(dir==='down' && hw[cur.r+1][cur.c]) return;
+        if(dir==='left' && vw[cur.r][cur.c]) return;
+        if(dir==='right' && vw[cur.r][cur.c+1]) return;
+        if(turn==='A') posA=next; else posB=next;
+        updatePawn(turn.toLowerCase(), next.r, next.c);
+        steps++; document.getElementById('steps-ui').innerText = "STEPS: " + steps;
+        turn = (turn === 'A' ? 'B' : 'A');
+        updateUI();
+    }
+
+    function handleMatch() {
+        if(state !== 'RUN') return;
+        if(Math.abs(posA.r - posB.r) + Math.abs(posA.c - posB.c) !== 1) { msg("棋子不相邻！", "red"); return; }
+        let kA = `${posA.r},${posA.c}`, kB = `${posB.r},${posB.c}`;
+        if(locked.has(kA) || locked.has(kB)) { msg("包含已锁定格子！", "red"); return; }
+        let key = [numbers[posA.r][posA.c], numbers[posB.r][posB.c]].sort().join('-');
+        if(combos.has(key)) { msg(`组合 [${key}] 已重复！`,"red"); return; }
+        locked.add(kA); locked.add(kB); combos.add(key);
+        drawBox(posA, posB);
+        document.getElementById('pairs-ui').innerText = `进度: ${combos.size} / 28`;
+        initBoard(); updateUI(); msg(`配对成功: ${key}`, "var(--gold)");
+    }
+
+    function drawBox(p1, p2) {
+        const b = document.createElement('div'); b.className = 'gold-rect';
+        b.style.top = (Math.min(p1.r, p2.r)*70 + 15)+'px'; b.style.left = (Math.min(p1.c, p2.c)*70 + 15)+'px';
+        b.style.width = (p1.c===p2.c?64:134)+'px'; b.style.height = (p1.r===p2.r?64:134)+'px';
+        document.getElementById('rect-layer').appendChild(b);
+    }
+
+    function updateUI() {
+        document.getElementById('pawn-a').classList.toggle('active-ring', turn === 'A');
+        document.getElementById('pawn-b').classList.toggle('active-ring', turn === 'B');
+        const ui = document.getElementById('turn-ui');
+        ui.innerText = "当前回合: " + turn; ui.style.background = turn === 'A' ? 'var(--pawn-a)' : 'var(--pawn-b)';
+        msg("请移动棋子 " + turn);
+    }
+
+    function updatePawn(id, r, c) {
+        const p = document.getElementById('pawn-' + id); p.style.display = 'flex';
+        p.style.top = (r * 70 + 19) + 'px'; p.style.left = (c * 70 + 19) + 'px';
+    }
+
+    function startTimer() { if(timerId) return; timerId = setInterval(()=> { seconds++; document.getElementById('timer').innerText = Math.floor(seconds/60).toString().padStart(2,'0')+":"+(seconds%60).toString().padStart(2,'0'); }, 1000); }
+    
+    function resetOnlyPosition() {
+        steps = 0; document.getElementById('steps-ui').innerText = "STEPS: 0";
+        document.getElementById('rect-layer').innerHTML = '';
+        locked.clear(); combos.clear(); document.getElementById('pairs-ui').innerText = "进度: 0 / 28";
+        state = 'SET_A'; document.getElementById('pawn-a').style.display='none'; document.getElementById('pawn-b').style.display='none';
+        msg("请重新放置 A"); turn = 'A';
+    }
+
+    function stopAndResetTimer() {
+        clearInterval(timerId); timerId = null; seconds = 0;
+        document.getElementById('timer').innerText = "00:00";
+    }
+
+    function exportToTextarea() {
+        document.getElementById('io-area').value = JSON.stringify({numbers, hw, vw});
+        msg("代码已显示在下方预览区", "var(--cyan)");
+    }
+
+    async function saveWithSystemPicker() {
+        const data = JSON.stringify({numbers, hw, vw});
+        if ('showSaveFilePicker' in window) {
+            try {
+                const handle = await window.showSaveFilePicker({ suggestedName: 'maze_config.txt', types: [{ description: 'Text File', accept: {'text/plain': ['.txt']} }] });
+                const writable = await handle.createWritable();
+                await writable.write(data); await writable.close();
+                msg("文件保存成功！", "var(--cyan)");
+            } catch (err) { console.error(err); }
+        } else {
+            const blob = new Blob([data], {type: "text/plain"});
+            const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "maze_config.txt"; a.click();
+            msg("另存为功能受限，已自动下载", "orange");
+        }
+    }
+
+    function importFromFile(input) {
+        const reader = new FileReader();
+        reader.onload = () => {
+            const d = JSON.parse(reader.result);
+            numbers = d.numbers; hw = d.hw; vw = d.vw;
+            stopAndResetTimer(); initBoard(); resetOnlyPosition();
+            msg("外部布局导入成功！", "var(--cyan)");
+        };
+        reader.readAsText(input.files[0]);
+    }
+
+    function loadOriginal() {
+        if(confirm("将清空所有数据，还原国际赛原题并重置时间。确认吗？")){
+            numbers = JSON.parse(JSON.stringify(ORIG_NUM));
+            hw = JSON.parse(JSON.stringify(ORIG_WALL.h));
+            vw = JSON.parse(JSON.stringify(ORIG_WALL.v));
+            stopAndResetTimer(); initBoard(); resetOnlyPosition();
+            msg("原题已加载", "var(--cyan)");
+        }
+    }
+
+    function msg(t, c) { const s = document.getElementById('status-msg'); s.innerText = t; s.style.color = c||'var(--gold)'; }
+
+    window.onkeydown = (e) => {
+        if(editMode) return;
+        const k = e.key.toLowerCase();
+        if(['w','arrowup'].includes(k)) movePawn('up'); if(['s','arrowdown'].includes(k)) movePawn('down');
+        if(['a','arrowleft'].includes(k)) movePawn('left'); if(['d','arrowright'].includes(k)) movePawn('right');
+        if(e.code === 'Space') { e.preventDefault(); handleMatch(); }
+    };
+
+    initBoard();
+</script>
+</body>
+</html>
